@@ -26,7 +26,7 @@ gsoc 设计文档更新版。
 
 在 linux 机器中，可通过  `nvidia-smi topo -m` 获取机器的 gpu 拓扑信息。
 
-![gpu topology on machine](./img/gpu_topology_on_machine.png)
+![gpu topology on machine](./imgs/gpu_topology_on_machine.png)
 
 缩写的对应关系如下
 
@@ -231,4 +231,4 @@ ALIYUN_COM_GPU_ASSUME_TIME: 1561718702
 
 根据以上思路，可作下图简单描述整个流程
 
-![gpu topology on k8s](./img/gpu_topology_on_k8s.png)
+![gpu topology on k8s](./imgs/gpu_topology_on_k8s.png)

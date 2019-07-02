@@ -127,82 +127,9 @@ device-plugin 在 listAndWatch 的过程 上传资源类型 "aliyun.com/gpu"
 - 选择最佳gpu组合设计
 - 计算最佳组合的分数设计
 
-TODO: 打分方案参照腾讯论文
+[打分方案参照腾讯论文](./reference/gaia_gpu_topology/gaia_gpu_topology_scheduler.md)
 
-##### 2.2.1 gpu 最佳亲和性选择
-
-gpu 最佳亲和性方案如下：
-
-- 当 请求 aliyun.com/gpu-count 为 1 时，随机选择一个未经使用到gpu。
-- 当 请求 aliyun.com/gpu-count 大于等于 2 时，先选择一个路径最短的两个gpu, 然后通过图的最短生成树方案（改良过的 prim 算法）得出最佳 gpu 组合方案（device list）。
-
-伪代码如下：
-
-```
-// req == 1, 随机返回device id
-if req == 1 {
-	for:  device list 列表
-		if device 没有使用
-			选择该 device 
-			return
-}
-
-// 获取最短路径
-for gputopogy 二维数组
-	if gpu1 is used 
-		continue;
-	for gpu1 连接 的设备
-		if gpu 2 is used
-		    continue
-		if getToploge(gpu1, gpu2) < min {
-			min = getToploge(gpu1, gpu2)
-			最短的两个gpu节点作为
-		}
-		    
-将选择的两个节点加入到 ids
-if req == 2 {
-	return
-}
-
-
-// 寻找接下来的点。
-for 遍历所有没有使用过，未经选择的节点
-	选择出到 ids 距离和最短到节点，加入到 ids
-
-如此循环直到找到满足请求的 gpu-count 个数为止。
-
-```
-
-> 此方案有个问题：当选择最短两个节点时，出现了两个距离相等的方案。默认选择后者，这时候可能在选择第三个device时，到另外一种方案的距离更短。
-
-> 例如：有[0,1,2,3,4]5个节点。发现，最短2个device方案有[0,1] 或者 [0,2]。在选择第三个方案的时候，发现 节点3，到[0,1] 的距离更短。而这个时候可能已经确定了[0,2]作为两个device最短方案。
-
-#### 2.2.2 计算最佳组合的分数设计
-
-每种gpu link 关系赋值如下表：
-
-| P2PLinkType | P2PLinkTypeDesc | mark |
-| --- | --- | --- |
-| sdfP2PLinkCrossCPU | Cross CPU socket | 1 |
-| sdP2PLinkSameCPU | Same CPU socket | 2 |
-| P2PLinkHostBridge | Host PCI bridge | 3 |
-| P2PLinkMultiSwitch | Multiple PCI switches | 4 |
-| P2PLinkSingleSwitch | Single PCI switch | 5 |
-| P2PLinkSameBoard | Same board | 6 |
-
-分数计算方式如下：
-
-```
-10 - 10 * sum(topology) / 6 * len(topology)
-```
-
-对所有的gpu连接路径求和 再作归一化处理，再成以最大值 10， 再被10 减去。
-
-例如：有选择了4个device， 它们之间的拓扑关系是：1，1，1，2，3，3
-
-```
-计算结果为：10*[1-(1+1+1+2+3+3)/6*6]
-```
+todo: 设计自己的 gpu 调度方案
 
 ### 2.3 scheduler bind 方案
 
@@ -235,3 +162,5 @@ ALIYUN_COM_GPU_ASSUME_TIME: 1561718702
 根据以上思路，可作下图简单描述整个流程
 
 ![gpu topology on k8s](./imgs/gpu_topology_on_k8s.png)
+
+todo: 将自己做的工作用不同颜色标记出来，且贴上原来设计图的链接

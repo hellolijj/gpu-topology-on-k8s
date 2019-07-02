@@ -16,7 +16,7 @@ gsoc 设计文档更新版。
 
 ## 约定
 
-当只有一块gpu的时候，不考虑 gpu 拓扑结构。也就是说不存在 `map[gpu1][gpu1]` 这种情况
+当只有一块gpu的时候，不考虑 gpu 拓扑结构。也就是说不存在 `map[0][0]` 这种情况
 
 ## 思路
 
@@ -30,18 +30,21 @@ gsoc 设计文档更新版。
 
 缩写的对应关系如下
 
-| P2PLinkType | P2PLinkTypeDesc | 缩写 | 路径权值 |
+| P2PLinkType | P2PLinkTypeDesc | 缩写 | 带宽权值 |
 | --- | --- | --- | --- |
-| sdfP2PLinkCrossCPU | Cross CPU socket | SYS |  1 |
-| sdP2PLinkSameCPU | Same CPU socket | NODE | 2 |
-| P2PLinkHostBridge | Host PCI bridge | PHB | 3 |
-| P2PLinkMultiSwitch | Multiple PCI switches | PXB | 4 |
-| P2PLinkSingleSwitch | Single PCI switch | PIX | 5 |
-| P2PLinkSameBoard | Same board | PSB | 6 |
+| sdfP2PLinkCrossCPU | Cross CPU socket | SYS |  n |
+| sdP2PLinkSameCPU | Same CPU socket | NODE | n |
+| P2PLinkHostBridge | Host PCI bridge | PHB | n |
+| P2PLinkMultiSwitch | Multiple PCI switches | PXB | n |
+| P2PLinkSingleSwitch | Single PCI switch | PIX | n |
+| P2PLinkSameBoard | Same board | PSB | n |
 | SingleNVLINKLink |  | NV1 |  |
 | TwoNVLINKLinks |  | NV2 | |
 | ThreeNVLINKLinks |  | NV3 | |
 | FourNVLINKLinks |  | NV4 | |
+
+
+TODO: 这里带宽权重的设置需要找到依据。
 
 参考文档：
 
@@ -58,29 +61,28 @@ device-plugin 在初始化的时候，通过 nvml 包获取 节点中 gpu 的信
 设计 gpu topology 的数据结构如下：
 
 ```
-type gpuTopology map[uint]map[uint]gpuTopologyType
-type gpuTopologyDesc map[string]map[string]string
+type gpuTopology map[uint]map[uint]uint
+func (g *gpuTopology) String() string {
+  switch case
+
+}
 
 // 例如：如下格式表示gpuTopology
-map[0][0] = 1
+map[0][0] = 0
 // 例如：如下格式表示gpuTopologyDesc
-map["2a80bf1391b2"]["3a8af139cbd"] = "Host PCI bridge"
 ```
 
 #### 1.3 device-plugin 上报 gpu topology 给 node
 
 使用 node annotation 字段表示 gpu tology
 
-如： GSOC_ID_2a80bf1391b2_3a8af139cbd: Cross CPU socket
+如： GPU_SYS_0_1: Cross CPU socket
 
-> 注意 annotation 的 label key 不能超过 64 字符，因此使用 gpu 名称的最后一段（以“f”分割） 作为 gpu 简写
-
-> 疑问： GSOC_ID_DESC_2a80bf1391b2_3a8af139cbd: Cross CPU socket 的格式更有助与格式的调试。
-> GSOC_ID_0_1: 2有助于程序内部的运算，相互转化。因此是否可以将两种类型信息都传上去？
+> 这里的 SYS 来自于 Cross CPU socket 对应的缩写（详情参见上表）
 
 #### 1.4 listAndWatch 上报自定义资源字段
 
-device-plugin 在 listAndWatch 的过程 上传资源类型 "aliyun.com/gpu-count"
+device-plugin 在 listAndWatch 的过程 上传资源类型 "aliyun.com/gpu"
 
 ### 2. scheduler extender 根据 gpu topology 调度
 
@@ -92,14 +94,14 @@ device-plugin 在 listAndWatch 的过程 上传资源类型 "aliyun.com/gpu-coun
   "apiVersion": "v1",
   "extenders": [
     {
-      "urlPrefix": "http://127.0.0.1:32766/gpushare-scheduler",
-      "PrioritizeVerb" : "sortByGPUAffinity",
+      "urlPrefix": "http://127.0.0.1:32743/gputopology-scheduler",
+      "PrioritizeVerb" : "sort",
       "bindVerb":   "bind",
       "enableHttps": false,
       "nodeCacheCapable": true,
       "managedResources": [
         {
-          "name": "aliyun.com/gpu-count",
+          "name": "aliyun.com/gpu",
           "ignoredByScheduler": false
         }
       ],
@@ -113,7 +115,7 @@ device-plugin 在 listAndWatch 的过程 上传资源类型 "aliyun.com/gpu-coun
 
 - scheduler extender 不需要 filter 过程，gpu topology 的 预选过程是通过，“节点中的gpu-count” 是否满足调节来预选。这个过程在默认调度器中完成。
 - 新增 PrioritizeVerb 过程。此过程计算每个节点上的 满足gpu数量条件的 gpu 亲和性打分（即，计算每个节点上gpu 亲和性最好的方案对应的分数）。
-- bind 过程。在符合条件，且最高分数（经过预选、优选过程）的 node 节点上，选择最优 gpu 组合方案，写入到 annotion上，完成绑定，更新pod的annotation 字段。
+- bind 过程。在符合条件，且最高分数（经过预选、优选过程）的 node 节点上，选择最优 gpu 组合方案，写入到 annotation上，完成绑定，更新pod的annotation 字段。
 
 参考 [scheduler extender](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/scheduling/scheduler_extender.md) 的设计
 
@@ -123,6 +125,8 @@ device-plugin 在 listAndWatch 的过程 上传资源类型 "aliyun.com/gpu-coun
 
 - 选择最佳gpu组合设计
 - 计算最佳组合的分数设计
+
+TODO: 打分方案参照腾讯论文
 
 ##### 2.2.1 gpu 最佳亲和性选择
 
@@ -207,9 +211,7 @@ bind 的过程 将 最佳gpu组合方案，写入到 pod 的annotation 里。 �
 ```
 ALIYUN_COM_GPU_ASSIGNED: false
 ALIYUN_COM_GPU_ASSUME_TIME: 1561717704
-ALIYUN_COM_GPU_ID_0: 3a8af139cbd
-ALIYUN_COM_GPU_ID_2: 2bd8a1332c4
-ALIYUN_COM_GPU_ID_3: 9cbd3a8af13
+ALIYUN_COM_GPU_GROUP: 0,1,2,3
 ```
 
 同时更新 pod 的annotion， 在 device 上记录运行的 pod 信息。

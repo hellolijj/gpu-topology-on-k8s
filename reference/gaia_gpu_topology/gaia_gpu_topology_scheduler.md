@@ -6,7 +6,7 @@
 
 Nvidia 基于网络结构实现了 GUP 通信模式的分类
 
-![gpu topology on node](../gpu_topology_on_node.png)
+![gpu topology on node](./gpu_topology_on_node.png)
 
 基于 Nvidia 的研究， Gaia 实现了 GPU集群 （单机器上的多卡gpu）资源访问消耗树算法，kubernetes 根据这个树进算法进行调度。
 
@@ -25,7 +25,7 @@ Nvidia 基于网络结构实现了 GUP 通信模式的分类
 
 gpu 调度算法入口
 
-![gpu scheduler algorithm](./gpu_scheduler_algorithm.png)
+![gpu scheduler algorithm](./gpu_scheduler_algorithm.jpg)
 
 m 为请求的 gpu 数量， T 为 资源访问树，S 为返回结果， 可以访问的gpu
 
@@ -53,6 +53,6 @@ m 为请求的 gpu 数量， T 为 资源访问树，S 为返回结果， 可以
 
 ### 请求gpu > 1 时
 
-![gpu scheduler algorithm 2](./gpu_scheduler_sample_2.jpg)
+![gpu scheduler algorithm 2](./gpu_scheduler_algorithm_2.jpg)
 
 todo

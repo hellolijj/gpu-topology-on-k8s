@@ -61,15 +61,16 @@ device-plugin 在初始化的时候，通过 nvml 包获取 节点中 gpu 的信
 设计 gpu topology 的数据结构如下：
 
 ```
-type gpuTopology map[uint]map[uint]uint
-func (g *gpuTopology) String() string {
-  switch case
+type gpuTopologyType nvml.P2PLinkType
 
+type gpuTopology map[uint]map[uint]gpuTopologyType
+
+func (t gpuTopologyType)String() string  {
+	return nvml.P2PLinkType(t).String()
 }
 
 // 例如：如下格式表示gpuTopology
 map[0][0] = 0
-// 例如：如下格式表示gpuTopologyDesc
 ```
 
 #### 1.3 device-plugin 上报 gpu topology 给 node

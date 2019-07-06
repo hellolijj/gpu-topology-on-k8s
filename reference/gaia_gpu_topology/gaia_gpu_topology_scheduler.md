@@ -55,4 +55,4 @@ m 为请求的 gpu 数量， T 为 资源访问树，S 为返回结果， 可以
 
 ![gpu scheduler algorithm 2](./gpu_scheduler_algorithm_2.jpg)
 
-todo
+思路：根据深度优先搜索找到候选集。然后再对候选集合进行打分。选出最好的候选集。
